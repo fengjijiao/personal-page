@@ -1,0 +1,21 @@
+language: node_js
+node_js:
+- 4
+sudo: false
+
+cache:
+  directories:
+    - "$HOME/.npm"
+    - "$HOME/.cache"
+before_install:
+  - npm install -g bower
+  - npm install -g testem
+
+install:
+  - npm install
+  - bower install
+script:
+  - npm test
+
+notifications:
+  email: false
