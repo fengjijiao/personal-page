@@ -1,0 +1,83 @@
+var datas = {
+    isUploadActive: true,
+    isResultActive: false,
+    isUploadCompleted: false,
+    isResultCompleted: false
+};
+var vm = new Vue({
+    el: '#context',
+    data: datas
+});
+
+var xhrOnProgress = function(fun) {
+    xhrOnProgress.onprogress = fun; //绑定监听
+    //使用闭包实现监听绑
+    return function() {
+        //通过$.ajaxSettings.xhr();获得XMLHttpRequest对象
+        var xhr = $.ajaxSettings.xhr();
+        //判断监听函数是否为函数
+        if (typeof xhrOnProgress.onprogress !== 'function') return xhr;
+        //如果有监听函数并且xhr对象支持绑定时就把监听函数绑定上去
+        if (xhrOnProgress.onprogress && xhr.upload) {
+            xhr.upload.onprogress = xhrOnProgress.onprogress;
+        }
+        return xhr;
+    }
+};
+var inputs = document.querySelectorAll('.file-input');
+for (var i = 0, len = inputs.length; i < len; i++) {
+    customInput(inputs[i]);
+}
+
+function customInput(el) {
+    const fileInput = el.querySelector('[type="file"]')
+    const label = el.querySelector('[data-js-label]')
+    fileInput.onchange = fileInput.onmouseout = function() {
+    if (!fileInput.value) return
+        var value = fileInput.value.replace(/^.*[\\\/]/, '')
+        el.className += ' -chosen'
+        label.innerText = value
+        uploader();
+    }
+}
+function uploader() {
+   // 创建一个FileReader对象
+   var reader = new FileReader();
+   // 绑定load事件
+   reader.onload = function(e) {
+       //console.log(escape(e.target.result));
+       $("#Upload").hide();
+       datas.isUploadActive = false;
+       datas.isUploadCompleted = true;
+       $("#Upload").html('<div class="ui teal progress" id="uploadprogress" data-percent="6">\r\n<div class="bar"></div>\r\n</div>');
+       $('#uploadprogress').progress();
+       var DocumentGUID=guid();
+       $.ajax({
+            url: 'https://api.fengjijiao.cn/register-upload/',
+            type: 'POST',
+            data: {
+                ContentHead: DocumentGUID,
+                ContentBody: e.target.result
+            },
+            dataType: 'json',
+            xhr: xhrOnProgress(function(e) {
+                var percent = Math.ceil((e.loaded / e.total) * 100); //计算百分比
+                //console.log(percent);
+                $('#uploadprogress').progress({
+                   percent: percent
+                });
+            }),
+            success: function(data) {
+if(data.type && data.status_code == 200 ){
+                $("#Upload").hide();
+                datas.isResultActive = true;
+                $("#Result").html("<span style='float:right;font-size:9px;'>Identification ID:" + data.request_id + "</span><br>下载链接: " + data.download_url+"<br>唯一识别码:"+DocumentGUID);
+}else{
+alert('上传文件出现错误!');
+}
+}
+        });
+    }
+    // 读取File对象的数据
+    reader.readAsDataURL(document.querySelector("input[type=file]").files[0]);
+}
