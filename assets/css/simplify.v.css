@@ -1,0 +1,7 @@
+        @font-face {
+              font-family: 'gwqian';
+              src:url('../fonts/gwqian.ttf');
+        }
+        body{
+              font-family: 'gwqian';
+        }
